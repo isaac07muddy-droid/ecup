@@ -1,23 +1,59 @@
-// ---- eKombe data store (pure-JS, zero native deps) ----
-// Persists to a single JSON file. Simple and dependency-free so `npm install`
-// never needs a compiler. For large scale, swap this module for PostgreSQL
-// (the shapes below map directly to tables).
+// ---- eKombe data store ----
+// Persistence has two modes, chosen automatically:
+//   • DATABASE_URL set  -> PostgreSQL (permanent; survives restarts/sleep)  [Phase 2]
+//   • otherwise         -> local JSON file (simple; resets on restart)      [dev/Phase 1]
+// The whole dataset is kept in memory and saved as one JSON document, so every
+// store method below stays synchronous and unchanged between the two modes.
 const fs = require('fs');
 const path = require('path');
 
 const FILE = process.env.DB_PATH || path.join(__dirname, 'ekombe-data.json');
+const USE_DB = !!process.env.DATABASE_URL;
+let pool = null;
 
 let data = { users:[], tournaments:[], registrations:[], transactions:[], battles:[], seq:0 };
-try { if (fs.existsSync(FILE)) data = JSON.parse(fs.readFileSync(FILE,'utf8')); } catch(e){ console.error('store load failed, starting fresh', e.message); }
-if(!data.battles) data.battles = []; // ensure battles array exists on older data files
+
+function ensureShape(){
+  data.users=data.users||[]; data.tournaments=data.tournaments||[];
+  data.registrations=data.registrations||[]; data.transactions=data.transactions||[];
+  data.battles=data.battles||[]; data.seq=data.seq||0;
+}
+
+// Load existing data before the server starts accepting requests.
+async function init(){
+  if(USE_DB){
+    const { Pool } = require('pg');
+    const url = process.env.DATABASE_URL;
+    const local = /localhost|127\.0\.0\.1/.test(url);
+    pool = new Pool({ connectionString:url, ssl: local ? false : { rejectUnauthorized:false } });
+    await pool.query('CREATE TABLE IF NOT EXISTS kv_store (id TEXT PRIMARY KEY, data JSONB NOT NULL)');
+    const r = await pool.query("SELECT data FROM kv_store WHERE id='ekombe'");
+    if(r.rows.length){ data = r.rows[0].data; }
+    else { await pool.query("INSERT INTO kv_store(id,data) VALUES('ekombe',$1)", [JSON.stringify(data)]); }
+    ensureShape();
+    console.log('eKombe store: PostgreSQL connected — data is permanent.');
+  } else {
+    try { if (fs.existsSync(FILE)) data = JSON.parse(fs.readFileSync(FILE,'utf8')); }
+    catch(e){ console.error('store load failed, starting fresh', e.message); }
+    ensureShape();
+    console.log('eKombe store: local file — data resets when the server restarts.');
+  }
+}
 
 let saveTimer=null;
-function save(){
-  // debounce writes a touch to avoid hammering disk under bursts
-  if(saveTimer) return;
-  saveTimer=setTimeout(()=>{ saveTimer=null; fs.writeFileSync(FILE, JSON.stringify(data)); }, 30);
+function persist(){
+  if(USE_DB){
+    pool.query("INSERT INTO kv_store(id,data) VALUES('ekombe',$1) ON CONFLICT (id) DO UPDATE SET data=$1",
+      [JSON.stringify(data)]).catch(e=>console.error('DB save failed:', e.message));
+  } else {
+    try { fs.writeFileSync(FILE, JSON.stringify(data)); } catch(e){ console.error('file save failed:', e.message); }
+  }
 }
-function saveNow(){ if(saveTimer){clearTimeout(saveTimer);saveTimer=null;} fs.writeFileSync(FILE, JSON.stringify(data)); }
+function save(){ // debounce bursts
+  if(saveTimer) return;
+  saveTimer=setTimeout(()=>{ saveTimer=null; persist(); }, 150);
+}
+function saveNow(){ if(saveTimer){clearTimeout(saveTimer);saveTimer=null;} persist(); }
 const id = () => ++data.seq;
 
 const store = {
@@ -71,7 +107,7 @@ const store = {
   },
   txByUser(uid){ return data.transactions.filter(t=>t.user_id===uid).sort((a,b)=>b.id-a.id).slice(0,100); },
 
-  saveNow
+  init, saveNow
 };
 
 module.exports = store;

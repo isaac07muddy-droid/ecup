@@ -254,4 +254,6 @@ app.get('/api/config', (req,res)=> res.json({ freeOnly:FREE_ONLY, paymentsLive:P
   note:'Free-only launch: no money changes hands. Pass-through payments are built but dormant (set FREE_ONLY=false + wire Selcom to enable).' }));
 
 const PORT=process.env.PORT||3000;
-app.listen(PORT, ()=>console.log('eKombe backend running on http://localhost:'+PORT));
+store.init()
+  .then(()=> app.listen(PORT, ()=>console.log('eKombe backend running on http://localhost:'+PORT)))
+  .catch(e=>{ console.error('Failed to start — could not load data store:', e.message); process.exit(1); });
