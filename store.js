@@ -7,8 +7,9 @@ const path = require('path');
 
 const FILE = process.env.DB_PATH || path.join(__dirname, 'ekombe-data.json');
 
-let data = { users:[], tournaments:[], registrations:[], transactions:[], seq:0 };
+let data = { users:[], tournaments:[], registrations:[], transactions:[], battles:[], seq:0 };
 try { if (fs.existsSync(FILE)) data = JSON.parse(fs.readFileSync(FILE,'utf8')); } catch(e){ console.error('store load failed, starting fresh', e.message); }
+if(!data.battles) data.battles = []; // ensure battles array exists on older data files
 
 let saveTimer=null;
 function save(){
@@ -50,6 +51,16 @@ const store = {
   players(tid){ return this.regs(tid).map(r=>r.display_name); },
   regByName(tid,name){ return data.registrations.find(r=>r.tournament_id===Number(tid) && r.display_name===name); },
   regByUser(tid,uid){ return data.registrations.find(r=>r.tournament_id===Number(tid) && r.user_id===uid); },
+
+  // ---- battles (free 1v1 quick matches) ----
+  createBattle({host_id, host_name, country}){
+    const b={ id:id(), host_id, host_name, opp_id:null, opp_name:null, status:'open',
+      winner_id:null, winner_name:null, s1:null, s2:null, country:country||'TZ', created_at:new Date().toISOString() };
+    data.battles.push(b); save(); return b;
+  },
+  listBattles(){ return data.battles.slice().sort((a,b)=>b.id-a.id); },
+  battle(bid){ return data.battles.find(b=>b.id===Number(bid)); },
+  updateBattle(bid,patch){ const b=this.battle(bid); if(b){ Object.assign(b,patch); save(); } return b; },
 
   // ---- transactions (pass-through ledger) ----
   addTx({user_id,tournament_id,type,amount,currency,status}){
