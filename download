@@ -1,0 +1,4 @@
+node_modules/
+ekombe-data.json
+ekombe.db*
+*.log

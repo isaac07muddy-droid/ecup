@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eKombe — eFootball Tournaments</title>
+<style>
+:root{--green:#0a9d40;--green-d:#077a30;--red:#e5322d;--blue:#2563eb;--gold:#f4c430;
+--bg:#0d1117;--card:#161b22;--card2:#1c232c;--line:#2a323d;--txt:#e6edf3;--mut:#9aa4b0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);padding-bottom:70px}
+a{color:inherit}.wrap{max-width:720px;margin:0 auto;padding:0 14px}
+header{position:sticky;top:0;z-index:30;background:linear-gradient(90deg,var(--green-d),var(--green));height:54px;display:flex;align-items:center}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:19px}
+.cup{width:26px;height:26px;display:grid;place-items:center;background:linear-gradient(135deg,var(--red),var(--blue));border-radius:7px;font-size:14px}
+.spacer{flex:1}.hi{font-size:13px;font-weight:600;opacity:.9}
+.btn{background:var(--green);color:#fff;border:none;border-radius:10px;padding:12px 16px;font-weight:700;font-size:14px;cursor:pointer;width:100%}
+.btn:hover{background:#0bb249}.btn.sm{width:auto;padding:8px 13px;font-size:13px}
+.btn.ghost{background:transparent;border:1px solid var(--line)}.btn.red{background:var(--red)}.btn.gold{background:var(--gold);color:#3a2c00}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:12px}
+input,select{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:14px;margin-top:6px}
+label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-top:10px}
+.row{display:flex;gap:10px}.view{display:none;padding:16px 0 30px}.view.active{display:block}
+h2{font-size:19px;margin-bottom:4px}.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+.pill{display:inline-flex;gap:4px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;background:var(--card2);color:var(--mut)}
+.pill.green{background:rgba(10,157,64,.18);color:#3ddc7a}.pill.gold{background:rgba(244,196,48,.16);color:var(--gold)}
+.pill.blue{background:rgba(37,99,235,.18);color:#6ea8ff}.pill.red{background:rgba(229,50,45,.18);color:#ff7a75}
+.tcard{cursor:pointer}.tcard h3{font-size:16px;margin-bottom:3px}.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;z-index:30}
+nav button{flex:1;background:none;border:none;color:var(--mut);padding:8px 0;font-size:11px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:center}
+nav button .i{font-size:18px}nav button.on{color:#3ddc7a}
+.bracket{display:flex;gap:22px;overflow-x:auto;padding:6px 0 12px}
+.bround{display:flex;flex-direction:column;justify-content:space-around;min-width:160px;gap:12px}
+.rlab{font-size:10px;color:var(--mut);font-weight:800;text-transform:uppercase;text-align:center}
+.match{background:var(--card2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.side{display:flex;justify-content:space-between;padding:7px 9px;font-size:13px}.side+.side{border-top:1px solid var(--line)}
+.side.win{background:rgba(10,157,64,.15)}.side.win span:first-child{color:#3ddc7a;font-weight:800}
+.rep{border-top:1px dashed var(--line);text-align:center;padding:5px;font-size:11px;color:var(--gold);cursor:pointer;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 5px;text-align:center;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-size:11px}td.n{text-align:left;font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.open{display:flex}.sheet{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;width:100%;max-width:420px}
+.scorei{display:flex;gap:12px;align-items:center;justify-content:center;margin:14px 0}.scorei input{width:60px;text-align:center;font-size:20px;font-weight:800}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 18px;border-radius:22px;font-size:13px;font-weight:700;z-index:60;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}.toast.err{background:var(--red)}
+.auth{max-width:400px;margin:8vh auto 0}.banner{background:rgba(244,196,48,.1);border:1px solid rgba(244,196,48,.35);color:var(--gold);border-radius:10px;padding:10px;font-size:12px;margin-bottom:12px;font-weight:600}
+.kpi{display:flex;gap:8px}.kpi div{flex:1;background:var(--card2);border-radius:10px;padding:11px;text-align:center}.kpi b{display:block;font-size:18px;color:#3ddc7a}.kpi small{font-size:11px;color:var(--mut)}
+.seg{display:flex;background:var(--card2);border-radius:10px;padding:3px;margin-bottom:12px}.seg button{flex:1;background:none;border:none;color:var(--mut);padding:8px;font-weight:700;border-radius:8px;cursor:pointer}.seg button.on{background:var(--green);color:#fff}
+</style>
+</head>
+<body>
+<header><div class="wrap logo" style="width:100%;display:flex"><span class="cup">🏆</span> eKombe <span class="spacer"></span><span class="hi" id="hi"></span></div></header>
+
+<div class="wrap">
+  <!-- AUTH -->
+  <section id="v-auth" class="view active"><div class="auth">
+    <h2 id="authTitle">Welcome back</h2><div class="sub" id="authSub">Log in to your eFootball account.</div>
+    <div class="seg"><button id="segLogin" class="on" onclick="setMode('login')">Log in</button><button id="segReg" onclick="setMode('register')">Create account</button></div>
+    <div class="card">
+      <div id="regFields" style="display:none">
+        <label>Full name</label><input id="a_name" placeholder="e.g. Isaac Muddy">
+        <label>Country</label><select id="a_country"></select>
+      </div>
+      <label>Email</label><input id="a_email" type="email" placeholder="you@example.com">
+      <label>Password</label><input id="a_pass" type="password" placeholder="At least 6 characters">
+      <div style="height:14px"></div>
+      <button class="btn" id="authBtn" onclick="doAuth()">Log in</button>
+    </div>
+  </div></section>
+
+  <!-- DISCOVER -->
+  <section id="v-discover" class="view">
+    <h2>Discover</h2><div class="sub">Real tournaments, saved to the server.</div>
+    <div id="tlist"></div>
+  </section>
+
+  <!-- CREATE -->
+  <section id="v-create" class="view">
+    <h2>Create a competition</h2><div class="sub">This saves to the database and appears for everyone.</div>
+    <div class="card">
+      <label>Name</label><input id="c_name" placeholder="e.g. Friday Night Kombe">
+      <label>Format</label><select id="c_format"><option value="single">Single Elimination</option><option value="double">Double Elimination</option><option value="league">League / Round Robin</option><option value="groups">Groups + Knockout</option></select>
+      <label>Players</label><select id="c_size"><option>4</option><option selected>8</option><option>16</option></select>
+      <div id="c_entryWrap"><label>Entry fee (0 = free)</label><input id="c_entry" type="number" value="0"></div>
+      <div style="height:14px"></div><button class="btn gold" onclick="createT()">Create</button>
+    </div>
+  </section>
+
+  <!-- DETAIL -->
+  <section id="v-detail" class="view"></section>
+
+  <!-- RANKINGS -->
+  <section id="v-ranks" class="view"><h2>Rankings</h2><div class="sub">Real players, real records.</div><div class="card" id="ranktbl"></div></section>
+
+  <!-- PROFILE -->
+  <section id="v-profile" class="view">
+    <h2>Profile</h2>
+    <div class="card"><div id="p_name" style="font-weight:800;font-size:18px"></div><div class="sub" id="p_meta" style="margin:2px 0 0"></div></div>
+    <div class="kpi" id="p_kpi"></div>
+    <div style="height:14px"></div><button class="btn ghost" onclick="logout()">Log out</button>
+  </section>
+</div>
+
+<nav id="nav" style="display:none">
+  <button data-nav="discover" class="on" onclick="go('discover')"><span class="i">🔍</span>Discover</button>
+  <button data-nav="create" onclick="go('create')"><span class="i">➕</span>Create</button>
+  <button data-nav="ranks" onclick="go('ranks')"><span class="i">🏆</span>Ranks</button>
+  <button data-nav="profile" onclick="go('profile')"><span class="i">👤</span>Profile</button>
+</nav>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CUR={TZ:'Tanzania',KE:'Kenya',UG:'Uganda',NG:'Nigeria',GH:'Ghana',ZA:'South Africa',US:'United States',GB:'United Kingdom',EU:'Europe',IN:'India',BR:'Brazil',OT:'Other'};
+let token=localStorage.getItem('ek_token')||null, me=null, cfg=null, mode='login';
+const FMT={single:'Single Elim',double:'Double Elim',league:'League',groups:'Groups + KO'};
+const $=id=>document.getElementById(id);
+function toast(m,err){const t=$('toast');t.textContent=m;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2200);}
+async function api(path,method,body){
+  const h={'Content-Type':'application/json'}; if(token)h.Authorization='Bearer '+token;
+  const r=await fetch('/api'+path,{method:method||'GET',headers:h,body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||'error'); return j;
+}
+
+/* AUTH */
+function setMode(m){mode=m;const reg=m==='register';
+  $('segLogin').className=reg?'':'on';$('segReg').className=reg?'on':'';
+  $('regFields').style.display=reg?'block':'none';
+  $('authTitle').textContent=reg?'Create your account':'Welcome back';
+  $('authSub').textContent=reg?'Join eKombe and start competing.':'Log in to your eFootball account.';
+  $('authBtn').textContent=reg?'Create account':'Log in';
+}
+async function doAuth(){
+  try{
+    let res;
+    if(mode==='register'){
+      res=await api('/register','POST',{name:$('a_name').value,country:$('a_country').value,email:$('a_email').value,password:$('a_pass').value});
+    } else { res=await api('/login','POST',{email:$('a_email').value,password:$('a_pass').value}); }
+    token=res.token; me=res.user; localStorage.setItem('ek_token',token);
+    enterApp(); toast('Karibu, '+me.name.split(' ')[0]+'!');
+  }catch(e){toast(e.message,true);}
+}
+function logout(){token=null;me=null;localStorage.removeItem('ek_token');$('nav').style.display='none';go('auth');}
+
+function enterApp(){$('hi').textContent=me.name;$('nav').style.display='flex';go('discover');}
+
+/* ROUTER */
+function go(v,arg){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  $('v-'+v).classList.add('active');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.nav===v));
+  window.scrollTo(0,0);
+  if(v==='discover')loadDiscover(); if(v==='ranks')loadRanks(); if(v==='profile')loadProfile(); if(v==='detail')loadDetail(arg);
+}
+
+/* DISCOVER */
+async function loadDiscover(){
+  const ts=await api('/tournaments');
+  $('tlist').innerHTML = ts.length? ts.map(t=>{
+    const pct=Math.min(100,Math.round(t.players.length/t.size*100));
+    const stat=t.status==='live'?'<span class="pill blue">● Live</span>':t.status==='done'?'<span class="pill gold">🏆 '+t.champion+'</span>':'<span class="pill green">Open</span>';
+    return `<div class="card tcard" onclick="go('detail',${t.id})"><div style="display:flex;justify-content:space-between"><h3>${t.name}</h3>${stat}</div>
+      <div class="sub" style="margin:2px 0 0">${FMT[t.format]} · ${t.players.length}/${t.size} players</div>
+      <div class="meta">${t.paid?`<span class="pill gold">Entry ${t.currency} ${t.entry}</span>`:'<span class="pill green">Free</span>'}<span class="pill">${CUR[t.country]||t.country}</span></div></div>`;
+  }).join('') : '<div class="sub">No tournaments yet. Create the first one!</div>';
+}
+
+/* CREATE */
+async function createT(){
+  try{ const entry = cfg.freeOnly?0:(+$('c_entry').value||0);
+    const t=await api('/tournaments','POST',{name:$('c_name').value,format:$('c_format').value,size:+$('c_size').value,paid:entry>0,entry});
+    toast('Tournament created!'); go('detail',t.id);
+  }catch(e){toast(e.message,true);}
+}
+
+/* DETAIL */
+let curT=null;
+async function loadDetail(id){
+  const t=await api('/tournaments/'+id); curT=t;
+  let h=`<div style="margin-bottom:10px"><span class="pill" onclick="go('discover')" style="cursor:pointer">← Back</span></div>
+    <h2>${t.name}</h2><div class="meta" style="margin-bottom:12px">
+    <span class="pill blue">${FMT[t.format]}</span><span class="pill">${t.players.length}/${t.size}</span>
+    ${t.paid?`<span class="pill gold">Entry ${t.currency} ${t.entry}</span>`:'<span class="pill green">Free</span>'}
+    ${t.status==='live'?'<span class="pill blue">● Live</span>':''}${t.status==='done'?'<span class="pill gold">🏆 '+t.champion+'</span>':''}</div>`;
+  if(t.paid){const pool=t.entry*t.players.length;const dist=Math.round(pool*(1-cfg.prizeCutPct/100));
+    h+=`<div class="card"><div class="sub" style="margin:0">Prize pool ${t.currency} ${dist} <span style="opacity:.7">(after ${cfg.prizeCutPct}% cut)</span> — paid to winners when it ends.</div></div>`;}
+  const joined=t.players.includes(me.name);
+  if(t.status==='open'){
+    h+=`<div class="card"><div class="sub" style="margin:0 0 8px">Players</div>${t.players.map(p=>`<div style="padding:5px 0;font-weight:600">${p}${p===me.name?' <span class="pill green">you</span>':''}</div>`).join('')||'<div class="sub">None yet</div>'}</div>
+      <div class="row">${joined?'<button class="btn ghost" disabled>✓ Joined</button>':`<button class="btn" onclick="joinT(${t.id})">Join${t.paid?' · '+t.currency+' '+t.entry:''}</button>`}
+      ${t.owner_id===me.id?`<button class="btn gold" onclick="startT(${t.id})">Start</button>`:''}</div>
+      ${t.owner_id===me.id?'<div style="height:8px"></div><button class="btn ghost sm" onclick="addBots('+t.id+')">+ Add demo players (test)</button>':''}`;
+  } else { h+=renderBracket(t); }
+  $('v-detail').innerHTML=h;
+}
+async function joinT(id){try{await api('/tournaments/'+id+'/join','POST');toast('Joined!');loadDetail(id);}catch(e){toast(e.message,true);}}
+async function addBots(id){try{await api('/tournaments/'+id+'/bots','POST');loadDetail(id);}catch(e){toast(e.message,true);}}
+async function startT(id){try{await api('/tournaments/'+id+'/start','POST');toast('Tournament started!');loadDetail(id);}catch(e){toast(e.message,true);}}
+
+function matchHtml(t,m){
+  const done=m.status==='done',can=t.status==='live'&&m.p1&&m.p2&&!done;
+  const side=(nm,sc,w)=>`<div class="side ${w?'win':''}"><span>${nm||'<span style="color:var(--mut)">—</span>'}</span><span style="font-weight:800">${sc??''}</span></div>`;
+  return `<div class="match">${side(m.p1,m.s1,done&&m.winner===m.p1)}${side(m.p2,m.s2,done&&m.winner===m.p2)}${can?`<div class="rep" onclick='openReport(${t.id},${JSON.stringify(m.id)},${JSON.stringify(m.p1)},${JSON.stringify(m.p2)})'>Report score</div>`:''}</div>`;
+}
+function elimCols(t,rounds){const lab=(i,n)=>{const l=n-i;return l===1?'Final':l===2?'Semis':l===3?'Quarters':'Round '+(i+1)};
+  return `<div class="bracket">${rounds.map((rd,i)=>`<div class="bround"><div class="rlab">${lab(i,rounds.length)}</div>${rd.map(m=>matchHtml(t,m)).join('')}</div>`).join('')}</div>`;}
+function renderBracket(t){const b=t.bracket;
+  if(b.type==='single') return `<div class="card">${elimCols(t,b.rounds)}</div>`;
+  if(b.type==='double') return `<div class="card"><div class="rlab" style="text-align:left;margin-bottom:6px">Winners</div>${elimCols(t,b.wb)}</div><div class="card"><div class="rlab" style="text-align:left;margin-bottom:6px">Losers</div>${elimCols(t,b.lb)}</div><div class="card"><div class="rlab" style="text-align:left;margin-bottom:6px">Grand Final</div><div class="bracket"><div class="bround">${b.gf.map(m=>matchHtml(t,m)).join('')}</div></div></div>`;
+  if(b.type==='league'){const st=t.standings||[];
+    return `<div class="card"><div class="sub" style="margin:0 0 6px">Standings</div><table><tr><th style="text-align:left">Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th></tr>${st.map((r,i)=>`<tr><td class="n">${i+1}. ${r.p}</td><td>${r.pl}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>
+      <div class="card"><div class="sub" style="margin:0 0 6px">Fixtures</div>${b.rounds.map((rd,i)=>`<div style="margin-bottom:8px"><div class="rlab" style="text-align:left">Matchday ${i+1}</div>${rd.map(m=>matchHtml(t,m)).join('')}</div>`).join('')}</div>`;}
+  if(b.type==='groups'){let h='';b.groups.forEach(g=>{h+=`<div class="card"><div class="rlab" style="text-align:left;margin-bottom:6px">${g.name}</div>${g.rounds.map(rd=>rd.map(m=>matchHtml(t,m)).join('')).join('')}</div>`;});
+    if(b.knockout)h+=`<div class="card"><div class="rlab" style="text-align:left;margin-bottom:6px">Knockout</div>${elimCols(t,b.knockout.rounds)}</div>`;else h+='<div class="banner">Finish all group matches to unlock the knockout.</div>';return h;}
+}
+let rep={};
+function openReport(tid,mid,p1,p2){rep={tid,mid,p1,p2};
+  $('sheet').innerHTML=`<h3>Report score</h3><div class="sub">${p1} vs ${p2}</div>
+    <div class="scorei"><input id="rs1" type="number" value="0"><b>–</b><input id="rs2" type="number" value="0"></div>
+    <div class="sub" style="text-align:center">If a draw, ${p1} is taken as the winner (penalties).</div>
+    <div class="row"><button class="btn ghost" onclick="closeSheet()">Cancel</button><button class="btn" onclick="submitReport()">Confirm</button></div>`;
+  $('modal').classList.add('open');
+}
+function closeSheet(){$('modal').classList.remove('open');}
+async function submitReport(){
+  try{const r=await api('/tournaments/'+rep.tid+'/report','POST',{matchId:rep.mid,s1:+$('rs1').value,s2:+$('rs2').value,pkWinner:rep.p1});
+    closeSheet();
+    if(r.champion){toast('🏆 '+r.champion+' wins!'); if(r.payout&&r.payout.distributed.length)setTimeout(()=>toast('Payout: '+r.payout.distributed.map(d=>d.name+' '+r.payout.currency+' '+d.amount).join(', ')),1600);}
+    loadDetail(rep.tid);
+  }catch(e){toast(e.message,true);}
+}
+
+/* RANKS + PROFILE */
+async function loadRanks(){const r=await api('/leaderboard');
+  $('ranktbl').innerHTML=`<table><tr><th style="text-align:left">Player</th><th>P</th><th>W</th><th>L</th><th>Win%</th><th>Pts</th></tr>${r.map(x=>`<tr><td class="n">${x.rank<=3?['🥇','🥈','🥉'][x.rank-1]:x.rank+'.'} ${x.name}</td><td>${x.played}</td><td>${x.wins}</td><td>${x.losses}</td><td>${x.winrate}%</td><td><b>${x.pts}</b></td></tr>`).join('')||'<tr><td colspan=6 class="sub">No players yet</td></tr>'}</table>`;
+}
+async function loadProfile(){const {user}=await api('/me');me=user;
+  $('p_name').textContent=user.name;$('p_meta').textContent=(CUR[user.country]||user.country);
+  $('p_kpi').innerHTML=`<div><b>${user.played}</b><small>Played</small></div><div><b>${user.wins}</b><small>Wins</small></div><div><b>${user.losses}</b><small>Losses</small></div><div><b>${user.played?Math.round(user.wins/user.played*100):0}%</b><small>Win%</small></div>`;
+}
+
+/* INIT */
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeSheet();});
+// Populate country list immediately — does not depend on the backend
+$('a_country').innerHTML=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k]}</option>`).join('');
+(async function init(){
+  try{
+    cfg=await api('/config');
+    if(cfg.freeOnly) $('c_entryWrap').style.display='none';
+    if(token){ try{const {user}=await api('/me');me=user;enterApp();}catch(e){token=null;localStorage.removeItem('ek_token');} }
+  }catch(e){ toast('Cannot reach server — start it with: npm start',true); }
+})();
+</script>
+</body>
+</html>
