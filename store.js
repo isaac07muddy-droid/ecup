@@ -17,7 +17,8 @@ let data = { users:[], tournaments:[], registrations:[], transactions:[], battle
 function ensureShape(){
   data.users=data.users||[]; data.tournaments=data.tournaments||[];
   data.registrations=data.registrations||[]; data.transactions=data.transactions||[];
-  data.battles=data.battles||[]; data.resetCodes=data.resetCodes||{}; data.seq=data.seq||0;
+  data.battles=data.battles||[]; data.resetCodes=data.resetCodes||{};
+  data.notifications=data.notifications||[]; data.seq=data.seq||0;
 }
 
 // Load existing data before the server starts accepting requests.
@@ -110,6 +111,15 @@ const store = {
   listBattles(){ return data.battles.slice().sort((a,b)=>b.id-a.id); },
   battle(bid){ return data.battles.find(b=>b.id===Number(bid)); },
   updateBattle(bid,patch){ const b=this.battle(bid); if(b){ Object.assign(b,patch); save(); } return b; },
+
+  // ---- notifications ----
+  addNotification(user_id, text, link){
+    if(!user_id) return;
+    data.notifications.push({ id:id(), user_id, text, link:link||null, read:false, created_at:new Date().toISOString() });
+    save();
+  },
+  listNotifications(uid){ return data.notifications.filter(n=>n.user_id===uid).sort((a,b)=>b.id-a.id).slice(0,50); },
+  markNotifsRead(uid){ let ch=false; data.notifications.forEach(n=>{ if(n.user_id===uid && !n.read){ n.read=true; ch=true; } }); if(ch) save(); },
 
   // ---- transactions (pass-through ledger) ----
   addTx({user_id,tournament_id,type,amount,currency,status}){
