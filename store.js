@@ -10,6 +10,7 @@ const path = require('path');
 const FILE = process.env.DB_PATH || path.join(__dirname, 'ekombe-data.json');
 const USE_DB = !!process.env.DATABASE_URL;
 let pool = null;
+const evMem = new Map(); let evSeq = 0; // evidence store for local (file) mode
 
 let data = { users:[], tournaments:[], registrations:[], transactions:[], battles:[], seq:0 };
 
@@ -27,6 +28,7 @@ async function init(){
     const local = /localhost|127\.0\.0\.1/.test(url);
     pool = new Pool({ connectionString:url, ssl: local ? false : { rejectUnauthorized:false } });
     await pool.query('CREATE TABLE IF NOT EXISTS kv_store (id TEXT PRIMARY KEY, data JSONB NOT NULL)');
+    await pool.query('CREATE TABLE IF NOT EXISTS evidence (id SERIAL PRIMARY KEY, kind TEXT, ref_id INT, uploader TEXT, mime TEXT NOT NULL, image TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now())');
     const r = await pool.query("SELECT data FROM kv_store WHERE id='ekombe'");
     if(r.rows.length){ data = r.rows[0].data; }
     else { await pool.query("INSERT INTO kv_store(id,data) VALUES('ekombe',$1)", [JSON.stringify(data)]); }
@@ -107,6 +109,23 @@ const store = {
     save();
   },
   txByUser(uid){ return data.transactions.filter(t=>t.user_id===uid).sort((a,b)=>b.id-a.id).slice(0,100); },
+
+  // ---- evidence (match-proof screenshots; stored outside the main blob) ----
+  async saveEvidence({kind,ref_id,uploader,mime,image}){
+    if(USE_DB){
+      const r=await pool.query("INSERT INTO evidence(kind,ref_id,uploader,mime,image) VALUES($1,$2,$3,$4,$5) RETURNING id",
+        [kind||'match', ref_id||null, uploader||null, mime, image]);
+      return r.rows[0].id;
+    }
+    const id=++evSeq; evMem.set(id,{mime,image}); return id;
+  },
+  async getEvidence(id){
+    if(USE_DB){
+      const r=await pool.query("SELECT mime,image FROM evidence WHERE id=$1",[Number(id)]);
+      return r.rows[0]||null;
+    }
+    return evMem.get(Number(id))||null;
+  },
 
   init, saveNow
 };
