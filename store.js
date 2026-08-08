@@ -17,7 +17,7 @@ let data = { users:[], tournaments:[], registrations:[], transactions:[], battle
 function ensureShape(){
   data.users=data.users||[]; data.tournaments=data.tournaments||[];
   data.registrations=data.registrations||[]; data.transactions=data.transactions||[];
-  data.battles=data.battles||[]; data.seq=data.seq||0;
+  data.battles=data.battles||[]; data.resetCodes=data.resetCodes||{}; data.seq=data.seq||0;
 }
 
 // Load existing data before the server starts accepting requests.
@@ -69,6 +69,11 @@ const store = {
   userById(uid){ return data.users.find(u=>u.id===uid); },
   addResult(uid, win){ const u=this.userById(uid); if(!u) return; u.played++; if(win)u.wins++; else u.losses++; save(); },
   setPassword(uid, hash){ const u=this.userById(uid); if(u){ u.password=hash; save(); } return u; },
+  // ---- password-reset codes (short-lived) ----
+  setResetCode(email, hash, expires){ data.resetCodes[String(email).toLowerCase()]={hash,expires,tries:0}; save(); },
+  getResetCode(email){ return data.resetCodes[String(email).toLowerCase()]||null; },
+  bumpResetTries(email){ const r=data.resetCodes[String(email).toLowerCase()]; if(r){ r.tries++; save(); } },
+  clearResetCode(email){ delete data.resetCodes[String(email).toLowerCase()]; save(); },
   topPlayers(limit){ return data.users.slice().sort((a,b)=> b.wins-a.wins || a.played-b.played).slice(0,limit); },
   allUsers(){ return data.users.slice(); },
 
