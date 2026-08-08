@@ -62,13 +62,14 @@ const store = {
   // ---- users ----
   createUser({name,email,password,country,phone}){
     const u={ id:id(), name, email:email.toLowerCase(), password,
-      country:country||'TZ', phone:phone||null, wins:0, losses:0, played:0, created_at:new Date().toISOString() };
+      country:country||'TZ', phone:phone||null, avatar:null, wins:0, losses:0, played:0, created_at:new Date().toISOString() };
     data.users.push(u); save(); return u;
   },
   userByEmail(email){ return data.users.find(u=>u.email===String(email||'').toLowerCase()); },
   userById(uid){ return data.users.find(u=>u.id===uid); },
   addResult(uid, win){ const u=this.userById(uid); if(!u) return; u.played++; if(win)u.wins++; else u.losses++; save(); },
   setPassword(uid, hash){ const u=this.userById(uid); if(u){ u.password=hash; save(); } return u; },
+  setAvatar(uid, evidenceId){ const u=this.userById(uid); if(u){ u.avatar=evidenceId; save(); } return u; },
   // ---- password-reset codes (short-lived) ----
   setResetCode(email, hash, expires){ data.resetCodes[String(email).toLowerCase()]={hash,expires,tries:0}; save(); },
   getResetCode(email){ return data.resetCodes[String(email).toLowerCase()]||null; },
@@ -80,7 +81,7 @@ const store = {
   // ---- tournaments ----
   createTournament(t){
     const row={ id:id(), name:t.name, format:t.format, size:t.size||8, paid:t.paid?1:0, entry:t.entry||0,
-      country:t.country||'TZ', status:'open', champion:null, owner_id:t.owner_id, bracket:null, created_at:new Date().toISOString() };
+      country:t.country||'TZ', status:'open', champion:null, owner_id:t.owner_id, logo:t.logo||null, bracket:null, created_at:new Date().toISOString() };
     data.tournaments.push(row); save(); return row;
   },
   listTournaments(){ return data.tournaments.slice().sort((a,b)=>b.id-a.id); },
@@ -88,12 +89,15 @@ const store = {
   updateTournament(tid, patch){ const t=this.tournament(tid); if(t){ Object.assign(t,patch); save(); } return t; },
 
   // ---- registrations ----
-  addRegistration(tid,uid,display,paid_status){
-    data.registrations.push({ id:id(), tournament_id:Number(tid), user_id:uid, display_name:display, paid_status });
+  addRegistration(tid,uid,display,paid_status,status){
+    data.registrations.push({ id:id(), tournament_id:Number(tid), user_id:uid, display_name:display, paid_status, status:status||'approved' });
     save();
   },
   regs(tid){ return data.registrations.filter(r=>r.tournament_id===Number(tid)); },
-  players(tid){ return this.regs(tid).map(r=>r.display_name); },
+  players(tid){ return this.regs(tid).filter(r=>r.status!=='pending').map(r=>r.display_name); }, // approved only
+  pendingRegs(tid){ return this.regs(tid).filter(r=>r.status==='pending'); },
+  approveReg(tid,uid){ const r=this.regByUser(tid,uid); if(r){ r.status='approved'; save(); } return r; },
+  removeReg(tid,uid){ data.registrations=data.registrations.filter(r=>!(r.tournament_id===Number(tid)&&r.user_id===uid)); save(); },
   regByName(tid,name){ return data.registrations.find(r=>r.tournament_id===Number(tid) && r.display_name===name); },
   regByUser(tid,uid){ return data.registrations.find(r=>r.tournament_id===Number(tid) && r.user_id===uid); },
 
