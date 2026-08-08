@@ -68,6 +68,7 @@ const store = {
   addResult(uid, win){ const u=this.userById(uid); if(!u) return; u.played++; if(win)u.wins++; else u.losses++; save(); },
   setPassword(uid, hash){ const u=this.userById(uid); if(u){ u.password=hash; save(); } return u; },
   topPlayers(limit){ return data.users.slice().sort((a,b)=> b.wins-a.wins || a.played-b.played).slice(0,limit); },
+  allUsers(){ return data.users.slice(); },
 
   // ---- tournaments ----
   createTournament(t){
